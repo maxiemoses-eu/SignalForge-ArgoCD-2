@@ -1,0 +1,38 @@
+# OS & System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor & IDE Directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*~
+
+# Logs & Temporary Files
+*.log
+logs/
+tmp/
+temp/
+
+# Environment & Secrets (Never commit secrets!)
+.env
+.env.*
+!.env.example
+secrets.yaml
+*-secret.yaml
+
+# Helm & Kubernetes Local Artifacts
+.helm/
+charts/*/charts/
+*.tgz
+*.lock
+
+# Local AI / Workspace State
+.gemini/
