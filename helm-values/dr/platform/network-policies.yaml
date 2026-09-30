@@ -1,0 +1,26 @@
+# 1. THE DR LOCKDOWN: Same as Prod
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dr-default-deny
+  namespace: signalforge-dr
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+
+---
+# 2. STANDBY EGRESS: Allow DR components to talk to Global Storage
+# Note: We do NOT allow Ingress to Grafana in DR until failover.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dr-telemetry-egress
+  namespace: signalforge-dr
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: signalforge
+  policyTypes: [Egress]
+  egress:
+  - to: [{ipBlock: {cidr: 0.0.0.0/0}}] # Replicated Azure Storage
+    ports: [{protocol: TCP, port: 443}]

@@ -1,0 +1,22 @@
+# SignalForge 2026: Intra-Namespace Zero-Trust Policy
+# Allows pods within the same namespace to communicate freely.
+# This is the "Internal Mesh" for microservice orchestration.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-namespace
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "network-policies.labels" . | nindent 4 }}
+spec:
+  # podSelector: {} targets all pods in the namespace
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {} # Allow ingress from any other pod in this namespace
+  egress:
+    - to:
+        - podSelector: {} # Allow egress to any other pod in this namespace

@@ -1,0 +1,92 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: signalforge-apps
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: argocd
+spec:
+  description: "SignalForge microservice workloads"
+  sourceRepos:
+    - "https://github.com/your-org/signalforge-argocd.git"
+  destinations:
+    - server: "https://kubernetes.default.svc"
+      namespace: signalforge-dev
+    - server: "https://prod-cluster.example.com"
+      namespace: signalforge-prod
+    - server: "https://dr-cluster.example.com"
+      namespace: signalforge-dr
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: ""
+      kind: ConfigMap
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: signalforge-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: argocd
+spec:
+  description: "SignalForge platform tooling: monitoring, logging, security, infra"
+  sourceRepos:
+    - "https://github.com/your-org/signalforge-argocd.git"
+    - "https://prometheus-community.github.io/helm-charts"
+    - "https://grafana.github.io/helm-charts"
+    - "https://fluent.github.io/helm-charts"
+    - "https://falcosecurity.github.io/charts"
+    - "https://charts.bitnami.com/bitnami"
+  destinations:
+    - server: "https://kubernetes.default.svc"
+      namespace: monitoring
+    - server: "https://kubernetes.default.svc"
+      namespace: logging
+    - server: "https://kubernetes.default.svc"
+      namespace: security
+    - server: "https://kubernetes.default.svc"
+      namespace: signalforge-dev
+    - server: "https://prod-cluster.example.com"
+      namespace: monitoring
+    - server: "https://prod-cluster.example.com"
+      namespace: logging
+    - server: "https://prod-cluster.example.com"
+      namespace: security
+    - server: "https://prod-cluster.example.com"
+      namespace: signalforge-prod
+    - server: "https://dr-cluster.example.com"
+      namespace: monitoring
+    - server: "https://dr-cluster.example.com"
+      namespace: logging
+    - server: "https://dr-cluster.example.com"
+      namespace: security
+    - server: "https://dr-cluster.example.com"
+      namespace: signalforge-dr
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: networking.k8s.io
+      kind: NetworkPolicy

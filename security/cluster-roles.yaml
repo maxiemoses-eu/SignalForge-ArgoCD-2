@@ -1,0 +1,94 @@
+---
+# Falco needs read access to cluster resources to enrich its alerts
+# with Kubernetes metadata (pod names, namespaces, labels).
+# This is SEPARATE from Prometheus RBAC — different tools, different blast radii.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: falco-cluster-reader
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: security
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+      - pods
+      - replicationcontrollers
+      - services
+      - endpoints
+      - events
+      - serviceaccounts
+      - configmaps  # Read-only — Falco needs to read pod specs for context
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["cronjobs", "jobs"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: falco-cluster-reader-binding
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: security
+subjects:
+  - kind: ServiceAccount
+    name: falco
+    namespace: security
+roleRef:
+  kind: ClusterRole
+  name: falco-cluster-reader
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Prometheus ClusterRole — kept SEPARATE from Falco intentionally.
+# Prometheus needs read access to metrics endpoints and service discovery.
+# Mixing this with Falco permissions makes auditing impossible.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-cluster-reader
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: monitoring
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-cluster-reader-binding
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: monitoring
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-stack-kube-prom-prometheus
+    namespace: monitoring
+roleRef:
+  kind: ClusterRole
+  name: prometheus-cluster-reader
+  apiGroup: rbac.authorization.k8s.io

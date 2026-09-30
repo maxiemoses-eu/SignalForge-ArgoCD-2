@@ -1,0 +1,47 @@
+cluster: "https://kubernetes.default.svc"
+namespace: "signalforge-prod"
+
+# 1. Image Security
+image:
+  repository: "signalforge.azurecr.io/users-service"
+  tag: "1.2.4" # Use specific semantic versions for Prod, never 'latest'
+  pullPolicy: IfNotPresent
+
+# 2. Production Networking
+service:
+  type: ClusterIP # Internal only (accessed via Gateway)
+  port: 80
+  targetPort: 5000
+
+# 3. Resource "Hardening" (Important for Python 3.11-slim)
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi" # Python can have memory spikes during JSON processing
+
+# 4. Production Grade Probes
+startupProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  failureThreshold: 10 # 10 * 5s = 50s total boot time
+  periodSeconds: 5
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 20 # Probe less often in Prod to save CPU
+  timeoutSeconds: 3
+
+readinessProbe:
+  httpGet:
+    path: /health # In Prod, ensure this endpoint checks DB connectivity
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  successThreshold: 2 # Must pass twice before getting traffic

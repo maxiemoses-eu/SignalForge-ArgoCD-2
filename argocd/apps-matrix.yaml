@@ -1,0 +1,71 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: signalforge-apps
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: apps-matrix
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - git:
+        repoURL: "https://github.com/your-org/signalforge-argocd.git"
+        revision: HEAD
+        files:
+          - path: "helm-values/dev/apps/*.yaml"
+          - path: "helm-values/prod/apps/*.yaml"
+          - path: "helm-values/dr/apps/*.yaml"
+  template:
+    metadata:
+      # path.segments[1] = env folder (dev/prod/dr)
+      # path.basenameNExt = filename without extension (api-gateway)
+      name: "sf-{{ index .path.segments 1 }}-{{ .path.basenameNExt }}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        app.kubernetes.io/part-of: signalforge-apps
+        environment: "{{ index .path.segments 1 }}"
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: deployments
+        notifications.argoproj.io/subscribe.on-health-degraded.slack: deployments
+    spec:
+      project: signalforge-apps
+      sources:
+        - repoURL: "https://github.com/your-org/signalforge-argocd.git"
+          targetRevision: HEAD
+          path: charts/service-chart
+          helm:
+            # releaseName uses basenameNExt — no .yaml suffix in Helm release name
+            releaseName: "{{ .path.basenameNExt }}"
+            valueFiles:
+              # $values ref points to the second source (this repo)
+              # path.basenameNExt gives api-gateway, not api-gateway.yaml
+              - "$values/{{ .path.path }}"
+        - repoURL: "https://github.com/your-org/signalforge-argocd.git"
+          targetRevision: HEAD
+          ref: values
+      destination:
+        # server and namespace come from the values file itself via .cluster/.namespace
+        # Since we dropped the list generator, we read cluster/namespace from the
+        # values file metadata block — each values file declares its own cluster target
+        server: "{{ .cluster }}"
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - PrunePropagationPolicy=foreground
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      revisionHistoryLimit: 3

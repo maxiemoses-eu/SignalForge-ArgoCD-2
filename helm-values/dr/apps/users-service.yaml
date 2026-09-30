@@ -1,0 +1,26 @@
+service:
+  name: user
+  port: 5000
+
+image:
+  repository: signal-prod-users-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+command: ["python"]
+args: ["app.py"]
+
+health:
+  readinessPath: /health
+  livenessPath: /health
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+secrets:
+  jwtSecret: user-secret

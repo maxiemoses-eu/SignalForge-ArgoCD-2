@@ -1,0 +1,11 @@
+cluster: "https://kubernetes.default.svc"
+namespace: "signalforge-dev"
+image:
+  repository: "signalforge.azurecr.io/product-service"
+  tag: "v1.0.0"
+
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  failureThreshold: 15

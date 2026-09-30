@@ -1,0 +1,41 @@
+# SignalForge 2026: DR (Disaster Recovery) Log Forwarder
+# Target: Secondary Azure Region Cluster
+
+config:
+  service: |
+    [Service]
+        Flush        5
+        Daemon       Off
+        Log_Level    warn
+        # We increase the flush time to 5s in DR to reduce CPU usage
+        storage.path /var/log/flb-storage/
+        storage.sync normal
+
+  inputs: |
+    [INPUT]
+        Name             tail
+        Path             /var/log/containers/*.log
+        Tag              kube.*
+        # We still keep filesystem buffering for safety during failover
+        storage.type     filesystem
+        Mem_Buf_Limit    20MB 
+
+  filters: |
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Merge_Log           On
+        Keep_Log            Off
+        # In DR, we ensure we label the logs as 'secondary'
+        K8S-Logging.Parser  On
+
+  outputs: |
+    [OUTPUT]
+        Name            loki
+        Match           kube.*
+        # Points to the DR Loki Service
+        Host            loki-gateway.monitoring.svc.cluster.local
+        Port            80
+        Auto_Kubernetes_Labels On
+        # Critical for DR filtering in Grafana
+        Labels          env=dr, region=secondary, cluster=signalforge-dr

@@ -1,0 +1,62 @@
+cluster: "https://kubernetes.default.svc"
+namespace: signalforge-dev
+
+replicaCount: 1
+
+image:
+  repository: your-registry.azurecr.io/signalforge/api-gateway
+  tag: "latest" # or your specific dev tag
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: api.dev.signalforge.internal
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+
+env:
+  - name: NODE_ENV
+    value: dev
+  - name: POSTGRES_HOST
+    value: postgres-postgresql.signalforge-dev.svc.cluster.local
+  - name: REDIS_HOST
+    value: redis-master.signalforge-dev.svc.cluster.local
+
+envFromSecrets:
+  - secretName: api-gateway-secrets
+
+# Updated Probes for Node.js (Removing /actuator)
+startupProbe:
+  path: /health
+  failureThreshold: 10
+  periodSeconds: 5
+  timeoutSeconds: 2
+
+livenessProbe:
+  path: /health
+  periodSeconds: 20
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  path: /health
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 2

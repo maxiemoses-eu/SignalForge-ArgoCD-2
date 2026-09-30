@@ -1,0 +1,66 @@
+cluster: "https://dr-cluster.example.com"
+namespace: signalforge-dr
+
+replicaCount: 2
+
+image:
+  repository: your-registry.azurecr.io/signalforge/api-gateway
+  tag: "1.0.0-stable"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.dr.signalforge.io
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: api-gateway-tls
+      hosts:
+        - api.dr.signalforge.io
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+env:
+  - name: NODE_ENV
+    value: dr
+  - name: FAILOVER_STATUS
+    value: active
+  - name: POSTGRES_HOST
+    value: postgres-postgresql.signalforge-dr.svc.cluster.local
+
+envFromSecrets:
+  - secretName: api-gateway-secrets
+
+startupProbe:
+  path: /health
+  failureThreshold: 15
+  periodSeconds: 5
+
+livenessProbe:
+  path: /health
+  periodSeconds: 15
+  failureThreshold: 3
+
+readinessProbe:
+  path: /health
+  periodSeconds: 5

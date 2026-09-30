@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "service-chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "service-chart.labels" . | nindent 4 }}
+spec:
+  # 2026 Standard: ClusterIP for internal service-to-service communication
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  ports:
+    - name: http
+      # The port other services use to call this one (e.g., http://payment-service:5003)
+      port: {{ .Values.service.port | default 5003 }}
+      # This MUST match the 'name: http' defined in the Deployment containerPort
+      targetPort: http 
+      protocol: TCP
+  selector:
+    # This is the 'glue' that finds the right pods for EACH microservice
+    {{- include "service-chart.selectorLabels" . | nindent 4 }}

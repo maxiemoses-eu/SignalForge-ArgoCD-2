@@ -1,0 +1,47 @@
+cluster: "https://kubernetes.default.svc"
+namespace: "signalforge-prod"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2 # Always have at least 2 for High Availability
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70 # Trigger scale-up at 70% CPU
+  targetMemoryUtilizationPercentage: 80
+
+image:
+  repository: "signalforge.azurecr.io/store-ui"
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+env:
+  - name: WEB_CONCURRENCY
+    value: "2" 
+  - name: GUNICORN_TIMEOUT
+    value: "30" 
+  - name: GUNICORN_GRACEFUL_TIMEOUT
+    value: "10"
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "512Mi"
+  limits:
+    memory: "1Gi" # 2026 Standard: Avoid CPU limits, strictly enforce Memory limits
+
+startupProbe:
+  path: /health
+  failureThreshold: 12
+  periodSeconds: 5
+  timeoutSeconds: 2
+
+livenessProbe:
+  path: /health
+  periodSeconds: 20 # Slower check for stability
+  failureThreshold: 3
+  timeoutSeconds: 5 # Longer than app timeout logic
+
+readinessProbe:
+  path: /health
+  periodSeconds: 5 # Frequent check for traffic routing
+  failureThreshold: 2
+  timeoutSeconds: 2

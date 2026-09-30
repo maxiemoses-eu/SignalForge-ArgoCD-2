@@ -1,0 +1,27 @@
+service:
+  name: order
+  port: 3002
+
+image:
+  repository: your-ecr/order-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+command: ["java"]
+args: ["-jar", "/app/app.jar"]
+
+health:
+  readinessPath: /actuator/health/readiness
+  livenessPath: /actuator/health/liveness
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+secrets:
+  dbUrl: postgres://order-db
+  jwtSecret: order-secret

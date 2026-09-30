@@ -1,0 +1,27 @@
+# SignalForge 2026: DR Managed DB Proxy (Standby)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: signalforge-dr
+  labels:
+    app.kubernetes.io/part-of: signalforge
+    env: dr
+spec:
+  type: ExternalName
+  # This points to your Failover/Secondary Azure Region Database
+  externalName: signal-dr-db.postgres.database.azure.com
+  ports:
+  - port: 5432
+    protocol: TCP
+    targetPort: 5432
+
+---
+# DR Credentials (usually a replica of Prod or a specific DR user)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: signalforge-dr
+type: Opaque
+data: {}

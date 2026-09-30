@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: signalforge-platform-engine  # FIXED: name changed to avoid clash with project name
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: platform-matrix
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - git:
+        repoURL: "https://github.com/your-org/signalforge-argocd.git"
+        revision: HEAD
+        files:
+          - path: "helm-values/dev/platform/*.yaml"
+          - path: "helm-values/prod/platform/*.yaml"
+          - path: "helm-values/dr/platform/*.yaml"
+  template:
+    metadata:
+      # FIXED: basenameNExt changed to basenameWithoutExt
+      name: "sf-platform-{{ index .path.segments 1 }}-{{ .path.basenameWithoutExt }}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        app.kubernetes.io/part-of: signalforge-platform
+        environment: "{{ index .path.segments 1 }}"
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: platform-alerts
+        notifications.argoproj.io/subscribe.on-health-degraded.slack: platform-alerts
+    spec:
+      project: signalforge-platform
+      sources:
+        - repoURL: "{{ .repoURL }}"
+          chart: "{{ .chart }}"
+          targetRevision: "{{ .targetRevision }}"
+          helm:
+            # FIXED: basenameNExt changed to basenameWithoutExt
+            releaseName: "{{ .path.basenameWithoutExt }}"
+            valueFiles:
+              - "$values/{{ .path.path }}"
+        - repoURL: "https://github.com/your-org/signalforge-argocd.git"
+          targetRevision: HEAD
+          ref: values
+      destination:
+        server: "{{ .cluster }}"
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - PrunePropagationPolicy=foreground
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 5m
+      revisionHistoryLimit: 3

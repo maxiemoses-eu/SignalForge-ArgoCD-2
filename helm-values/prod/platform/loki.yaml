@@ -1,0 +1,40 @@
+# SignalForge 2026: PROD High-Availability Logging
+loki:
+  auth_enabled: false
+  # Enable environment variable expansion for secrets
+  extraArgs:
+    - "-config.expand-env=true"
+
+  commonConfig:
+    replication_factor: 3 # PROD Standard: Survival of 2 node failures
+    path_prefix: /var/loki
+    storage:
+      type: azure
+      azure:
+        container_name: signalforge-prod-chunks
+        account_name: ${AZURE_STORAGE_ACCOUNT}
+        account_key: ${AZURE_STORAGE_KEY}
+        # Use Azure ZRS (Zone Redundant Storage) for the account itself
+
+  schema_config:
+    configs:
+      - from: "2026-01-01"
+        store: tsdb
+        object_store: azure
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+  # Distributed Mode: Splitting Read and Write for high traffic
+  deploymentMode: SimpleScalable
+  read:
+    replicas: 3
+  write:
+    replicas: 3
+  backend:
+    replicas: 2
+
+extraEnvFrom:
+  - secretRef:
+      name: azure-storage-secret-prod

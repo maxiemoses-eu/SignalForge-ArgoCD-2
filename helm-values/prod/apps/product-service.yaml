@@ -1,0 +1,23 @@
+service:
+  name: product
+  port: 5001
+
+image:
+  repository: signal-prod-product-microservice
+  tag: latest
+  pullPolicy: IfNotPresent
+
+command: ["node"]
+args: ["server.js"]
+
+health:
+  readinessPath: /health
+  livenessPath: /health
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi

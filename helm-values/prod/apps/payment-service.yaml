@@ -1,0 +1,82 @@
+# SignalForge 2026: Hardened Production Values
+# Project: SignalForge | Service: Payment-Service
+appName: payment-service
+namespace: signalforge-prod
+env: prod
+
+# 1. Scalability & HA (HPA v2 Strategy)
+replicaCount: 3 # Default/Min starting point
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  # 2026 Standard: Stabilization prevents 'thrashing' during minor spikes
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300 
+    scaleUp:
+      stabilizationWindowSeconds: 0
+
+# 2. Image & Logic
+image:
+  repository: your-registry.azurecr.io/signalforge/payment-service
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+# 3. Connectivity & Monitoring
+service:
+  type: ClusterIP
+  port: 5003
+
+monitoring:
+  enabled: true
+  path: /metrics
+  interval: 30s
+
+# 4. Probes (Startup/Readiness/Liveness Sync)
+probes:
+  startup:
+    path: /health
+    failureThreshold: 15 # Allows 75s for heavy binary boot
+  readiness:
+    path: /health
+  liveness:
+    path: /health
+
+# 5. Resources (Guaranteed QoS Class)
+# 2026 Rule: Requests == Limits for memory prevents OOMKills
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    memory: 256Mi
+
+# 6. Hardened Security Contexts
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
+# 7. Network Segmentation (Zero-Trust)
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+      ports:
+        - protocol: TCP
+          port: 5003

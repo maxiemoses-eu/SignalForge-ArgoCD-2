@@ -1,0 +1,47 @@
+# REQUIRED: Read by apps-matrix.yaml
+cluster: "https://kubernetes.default.svc"
+namespace: signalforge-dev
+
+replicaCount: 1
+
+image:
+  repository: your-registry.azurecr.io/signalforge/payment-service
+  tag: "v1.0.0-dev"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 5003
+
+# SECURITY-AS-CODE: Restricted Pod Security Standard
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  readOnlyRootFilesystem: true # Enforced in Dev to catch storage bugs early
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+env:
+  - name: APP_ENV
+    value: development
+  - name: DB_HOST
+    value: postgres-postgresql.signalforge-dev.svc.cluster.local
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: 5003
+  failureThreshold: 5
+  periodSeconds: 2

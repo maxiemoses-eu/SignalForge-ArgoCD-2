@@ -1,0 +1,24 @@
+# SignalForge 2026: PROD Runtime Security
+driver:
+  kind: modern_ebpf
+
+# Hardened PROD Rules
+customRules:
+  signalforge-prod.yaml: |-
+    - rule: Production Write to Binary Directory
+      desc: Detect unauthorized file writes in PROD
+      condition: >
+        evt.type = open_write and fd.name startswith /usr/bin/ 
+        and not proc.name in (apt, dpkg, helm)
+      output: "CRITICAL: Binary directory write detected (user=%user.name file=%fd.name proc=%proc.name)"
+      priority: EMERGENCY
+
+falcosidekick:
+  enabled: true
+  webui:
+    enabled: true
+  # Add your production alerting here
+  config:
+    slack:
+      webhookurl: ${SLACK_WEBHOOK_PROD}
+      minimumpriority: critical

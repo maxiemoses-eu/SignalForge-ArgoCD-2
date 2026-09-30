@@ -1,0 +1,24 @@
+cluster: "https://kubernetes.default.svc"
+namespace: "signalforge-dev"
+image:
+  repository: "signalforge.azurecr.io/users-service"
+  tag: "v1.0.0"
+
+service:
+  port: 80
+  targetPort: 5000 # Matches your Python app port
+
+# Probes matched to your Python Dockerfile
+livenessProbe:
+  httpGet:
+    path: /health # Matches your 'COPY app.py' health endpoint
+    port: 5000
+  initialDelaySeconds: 5 # Python starts fast
+  periodSeconds: 15
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 2
+  periodSeconds: 10

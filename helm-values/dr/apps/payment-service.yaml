@@ -1,0 +1,65 @@
+# REQUIRED: Read by apps-matrix.yaml
+cluster: "https://dr-cluster.example.com"
+namespace: signalforge-dr
+
+replicaCount: 2
+
+image:
+  repository: your-registry.azurecr.io/signalforge/payment-service
+  tag: "1.0.0-stable"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5003
+
+# SECURITY-AS-CODE: Parity with Production
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
+# Network Policy: DR-specific segmentation
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway # Only the DR Gateway can talk to DR Payment
+      ports:
+        - protocol: TCP
+          port: 5003
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+
+env:
+  - name: APP_ENV
+    value: dr
+  - name: DB_HOST
+    value: postgres-postgresql.signalforge-dr.svc.cluster.local
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5003
+  periodSeconds: 5

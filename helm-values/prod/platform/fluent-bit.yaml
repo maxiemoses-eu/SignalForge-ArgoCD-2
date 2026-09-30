@@ -1,0 +1,27 @@
+# SignalForge 2026: PROD Buffered Log Forwarder
+config:
+  service: |
+    [Service]
+        Flush        1
+        Daemon       Off
+        Log_Level    info
+        # PROD Safety: Buffer logs to disk if the network is slow
+        storage.path /var/log/flb-storage/
+        storage.sync normal
+        storage.checksum off
+        storage.backpressure_mem_limit 5MB
+
+  inputs: |
+    [INPUT]
+        Name             tail
+        Path             /var/log/containers/*.log
+        storage.type     filesystem # Enable the disk buffer
+
+  outputs: |
+    [OUTPUT]
+        Name            loki
+        Match           kube.*
+        Host            loki-gateway.monitoring.svc.cluster.local
+        Port            80
+        # High Availability Labels
+        Labels          env=prod, cluster=signalforge-primary, region=eastus

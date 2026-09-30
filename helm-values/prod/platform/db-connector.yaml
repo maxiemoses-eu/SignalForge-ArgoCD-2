@@ -1,0 +1,29 @@
+# SignalForge 2026: Production Managed DB Proxy
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: signalforge-prod
+  labels:
+    app.kubernetes.io/part-of: signalforge
+    env: prod
+spec:
+  type: ExternalName
+  # This points to your Primary Azure Region Database
+  externalName: signal-prod-db.postgres.database.azure.com
+  ports:
+  - port: 5432
+    protocol: TCP
+    targetPort: 5432
+
+---
+# This is the "Secret Handshake" - Terraform will populate this.
+# Your app's Deployment should reference this secret for its ENV vars.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: signalforge-prod
+type: Opaque
+# Data is empty here because it is injected by Terraform/Vault
+data: {}

@@ -1,0 +1,31 @@
+# SignalForge 2026: Azure-Native Logging (Loki)
+loki:
+  auth_enabled: false
+  
+  # This enables the use of ${VARIABLES} in the config below
+  extraArgs:
+    - "-config.expand-env=true"
+
+  commonConfig:
+    replication_factor: 1
+    storage:
+      type: azure
+      azure:
+        container_name: loki-chunks
+        account_name: ${AZURE_STORAGE_ACCOUNT} 
+        account_key: ${AZURE_STORAGE_KEY}
+
+  schema_config:
+    configs:
+      - from: "2026-01-01"
+        store: tsdb       
+        object_store: azure 
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+# This maps your kubectl secret to the variables above
+extraEnvFrom:
+  - secretRef:
+      name: azure-storage-secret

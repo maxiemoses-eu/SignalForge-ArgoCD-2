@@ -1,0 +1,20 @@
+# SignalForge 2026: DR Standby Logging
+loki:
+  auth_enabled: false
+  extraArgs:
+    - "-config.expand-env=true"
+
+  commonConfig:
+    replication_factor: 2 # DR can be leaner
+    storage:
+      type: azure
+      azure:
+        container_name: signalforge-prod-chunks # POINTS TO THE SAME PROD BUCKET
+        account_name: ${AZURE_STORAGE_ACCOUNT_DR}
+        account_key: ${AZURE_STORAGE_KEY_DR}
+
+  deploymentMode: SimpleScalable
+  read:
+    replicas: 2 # Lower scale for standby
+  write:
+    replicas: 2

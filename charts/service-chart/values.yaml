@@ -1,0 +1,69 @@
+# Matrix Metadata (Required by ApplicationSet)
+cluster: "https://kubernetes.default.svc"
+namespace: "signalforge-dev"
+
+# Application Configuration
+replicaCount: 1
+
+image:
+  repository: "ghcr.io/your-org/signalforge-service"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts: []
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+env: []
+
+envFromSecrets: []
+
+livenessProbe:
+  path: /actuator/health/liveness
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  path: /actuator/health/readiness
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  failureThreshold: 3
+  timeoutSeconds: 3
+
+monitoring:
+  enabled: true
+  path: /actuator/prometheus
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1

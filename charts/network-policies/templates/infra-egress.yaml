@@ -1,0 +1,40 @@
+# SignalForge 2026: Hardened Infrastructure Egress
+# Granting microservices access to Persistence & Messaging layers.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-infra-egress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "network-policies.labels" . | nindent 4 }}
+spec:
+  podSelector: {} # Applies to all microservices in the namespace
+  policyTypes:
+    - Egress
+  egress:
+    # 1. Postgres Access
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.infra.postgres.labelKey }}: {{ .Values.infra.postgres.labelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.infra.postgres.port }}
+
+    # 2. Redis Access
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.infra.redis.labelKey }}: {{ .Values.infra.redis.labelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.infra.redis.port }}
+
+    # 3. RabbitMQ Access
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.infra.rabbitmq.labelKey }}: {{ .Values.infra.rabbitmq.labelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.infra.rabbitmq.port }}

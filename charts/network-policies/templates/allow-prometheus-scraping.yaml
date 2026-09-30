@@ -1,0 +1,26 @@
+# SignalForge 2026: Hardened Prometheus Ingress Policy
+# Formerly: monitoring.yaml
+# Purpose: Opens the firewall for metrics collection from the monitoring namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "network-policies.labels" . | nindent 4 }}
+spec:
+  podSelector: {} # Targets all pods in the namespace (Payment, Auth, Gateway, etc.)
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              # 2026 Standard: This label is automatically present on the monitoring namespace
+              kubernetes.io/metadata.name: {{ .Values.monitoringNamespace | default "monitoring" }}
+      ports:
+        # Loop through 5003 and 8080 to ensure all service types are scrapeable
+        {{- range .Values.appPorts }}
+        - port: {{ . }}
+          protocol: TCP
+        {{- end }}

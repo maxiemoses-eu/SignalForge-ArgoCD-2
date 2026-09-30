@@ -1,0 +1,42 @@
+cluster: "https://kubernetes.default.svc"
+namespace: "signalforge-dev"
+
+autoscaling:
+  enabled: false # Keep it simple for Dev
+replicaCount: 1
+
+image:
+  repository: "signalforge.azurecr.io/store-ui"
+  tag: "v1.0.0-dev"
+
+env:
+  - name: WEB_CONCURRENCY
+    value: "1" 
+  - name: GUNICORN_TIMEOUT
+    value: "60" 
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    memory: "512Mi" # No CPU limit to avoid throttling during debug
+
+startupProbe:
+  path: /health
+  port: 8080
+  failureThreshold: 10
+  periodSeconds: 5
+
+livenessProbe:
+  path: /health
+  port: 8080
+  periodSeconds: 30
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  path: /health
+  port: 8080
+  periodSeconds: 10
+  timeoutSeconds: 2

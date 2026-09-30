@@ -1,0 +1,51 @@
+# SignalForge 2026: DR Metrics (Lean & Remote)
+prometheus:
+  prometheusSpec:
+    replicas: 1 # DR is a standby; 1 replica is enough to keep the lights on
+    retention: 2d # Keep only 48h locally to save disk/cost
+    
+    # THE DR SECRET SAUCE: Remote Write
+    # This sends your DR metrics to a global Azure Managed Prometheus
+    remoteWrite:
+      - url: "https://<your-azure-monitor-workspace-url>/api/v1/write"
+        azuread:
+          cloud: 'AzurePublic'
+          managed_identity:
+            client_id: "${MANAGED_IDENTITY_CLIENT_ID}"
+
+    # Resource Scaling: Minimal for DR
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: managed-csi # Still use Azure SSD for stability
+          resources:
+            requests:
+              storage: 20Gi
+
+# Alertmanager in DR: Only high-priority alerts
+alertmanager:
+  config:
+    route:
+      receiver: 'dr-slack-alerts'
+    receivers:
+    - name: 'dr-slack-alerts'
+      slack_configs:
+      - api_url: ${SLACK_WEBHOOK_DR}
+        channel: '#signalforge-dr-status'
+
+grafana:
+  enabled: true
+  # In DR, Grafana should point to the GLOBAL Azure Monitor Workspace
+  # so you can see PROD history even while in the DR cluster.
+  additionalDataSources:
+    - name: Global-Azure-Prometheus
+      type: prometheus
+      url: https://<your-azure-monitor-query-url>
+      jsonData:
+        azureCredentials:
+          authType: 'WorkloadIdentity'

@@ -1,0 +1,20 @@
+# SignalForge 2026: Runtime Security (Falco)
+tty: true
+
+# Driver: Modern eBPF is the 2026 standard for performance
+driver:
+  kind: modern_ebpf
+
+# Custom SignalForge Rules
+customRules:
+  signalforge-rules.yaml: |-
+    - rule: Unauthorized Shell in Payment Namespace
+      desc: Detect shell activity in sensitive namespaces
+      condition: container.id != host and proc.name = sh and k8s.ns.name = signalforge-dev
+      output: "Unauthorized shell spawned (user=%user.name container=%container.id ns=%k8s.ns.name)"
+      priority: CRITICAL
+
+falcosidekick:
+  enabled: true
+  webui:
+    enabled: true

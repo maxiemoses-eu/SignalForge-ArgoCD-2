@@ -1,0 +1,17 @@
+apiVersion: v2
+name: network-policies
+description: >-
+  Reusable zero-trust network policy chart for SignalForge namespaces.
+  Namespace is injected at deploy time via .Release.Namespace — no hardcoding.
+  Deployed once per environment via platform-matrix.yaml.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - signalforge
+  - security
+  - network-policy
+  - zero-trust
+maintainers:
+  - name: platform-team
+    email: platform@signalforge.io

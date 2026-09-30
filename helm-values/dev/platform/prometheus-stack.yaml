@@ -1,0 +1,26 @@
+# SignalForge 2026: Observability (Prometheus Stack)
+# Targets: prometheus-community/kube-prometheus-stack
+
+prometheus:
+  prometheusSpec:
+    # This is the "Magic" label that finds our ServiceMonitors
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchLabels:
+        release: prometheus-stack
+    
+    # Retention for Dev
+    retention: 7d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  enabled: true
+  adminPassword: "change-me-via-secret" # Injected via SealedSecrets/ExternalSecrets
+  persistence:
+    enabled: true

@@ -1,0 +1,74 @@
+cluster: "https://prod-cluster.example.com"
+namespace: signalforge-prod
+
+replicaCount: 3
+
+image:
+  repository: your-registry.azurecr.io/signalforge/api-gateway
+  tag: "1.0.0" # Use a stable version for Prod
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+  hosts:
+    - host: api.signalforge.io
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: api-gateway-tls
+      hosts:
+        - api.signalforge.io
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+env:
+  - name: NODE_ENV
+    value: production
+  - name: POSTGRES_HOST
+    value: postgres-postgresql.signalforge-prod.svc.cluster.local
+
+envFromSecrets:
+  - secretName: api-gateway-secrets
+
+# Probes optimized for Node.js Event Loop
+startupProbe:
+  path: /health
+  failureThreshold: 15
+  periodSeconds: 5
+
+livenessProbe:
+  path: /health
+  periodSeconds: 15
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  path: /health
+  periodSeconds: 5
+  failureThreshold: 2 # Fail fast in Prod to move traffic
+  timeoutSeconds: 3
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2

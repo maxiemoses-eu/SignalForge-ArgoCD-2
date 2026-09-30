@@ -1,0 +1,26 @@
+{{- if .Values.monitoring.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "service-chart.fullname" . }}
+  # 2026 Tip: Usually stays in monitoring namespace, but discovers apps elsewhere
+  namespace: monitoring 
+  labels:
+    {{- include "service-chart.labels" . | nindent 4 }}
+    # Critical for kube-prometheus-stack discovery
+    release: prometheus-stack 
+spec:
+  # Finds the Pods by labels
+  selector:
+    matchLabels:
+      {{- include "service-chart.selectorLabels" . | nindent 6 }}
+  # Looks across dev, prod, and dr namespaces
+  namespaceSelector:
+    any: true
+  endpoints:
+    - port: http # This matches the 'name: http' in your Deployment
+      path: {{ .Values.monitoring.path | default "/metrics" }}
+      interval: 30s
+      scrapeTimeout: 10s
+      honorLabels: true
+{{- end }}
