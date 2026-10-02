@@ -108,4 +108,4 @@ By default, Kubernetes allows open pod-to-pod communication. Our `network-polici
 4. **ArgoCD UI**: Access the ArgoCD dashboard to monitor sync health, application drift, and automated rollouts across Dev, DR, and Prod clusters.
 
 ---
-*Maintained by the SignalForge Platform Engineering Team.*
+*Maintained by Maxie and the SignalForge Platform Engineering Team.*
