@@ -1,6 +1,6 @@
 # SignalForge GitOps & ArgoCD Control Plane (`SignalForge-ArgoCD-2`)
 
-> **Enterprise-grade GitOps delivery engine for multi-environment microservice architectures across Development, Production, and Disaster Recovery (DR) clusters.**
+> **GitOps delivery engine designed with production-grade practices for multi-environment microservice architectures across Development, Production, and Disaster Recovery (DR) clusters.**
 
 ---
 
